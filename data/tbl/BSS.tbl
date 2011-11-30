@@ -1,0 +1,20 @@
+BSS = {
+	["WlcBot"] = {
+		["tNoWlc"] = {
+			["user1"] = true,
+			["user2"] = true,
+		},
+		["tWlc"] = {
+			["user1"] = "user1 back >_<|",
+		},
+	},
+	["GagBot"] = {
+		["tGagged"] = {
+		},
+		["tTimedGag"] = {
+		},
+	},
+	["ShowHistory"] = {
+		["user3"] = true,
+	},
+}

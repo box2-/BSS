@@ -1,0 +1,333 @@
+tCommandArrivals = {
+	["scriptstat"] = {
+		["Permissions"] = {
+			[0] = true, --Master
+			[1] = true, --Operator
+			[2] = true, --VIP
+			[3] = true, --Reg
+			[-1] = false, --unReg
+		},
+	},
+	["passwd"] = {
+		["Permissions"] = {
+			[0] = true,
+			[1] = true,
+			[2] = true,
+			[3] = true,
+			[-1] = false,
+		},
+	},
+	["showtopic"] = {
+		["Permissions"] = {
+			[0] = true,
+			[1] = true,
+			[2] = true,
+			[3] = true,
+			[-1] = true,
+		},
+	},
+	["warn"] = {
+		["Permissions"] = {
+			[0] = true,
+			[1] = true,
+			[2] = true,
+			[3] = true,
+			[-1] = true,
+		},
+	},
+	["regme"] = {
+		["Permissions"] = {
+			[0] = true,
+			[1] = true,
+			[2] = true,
+			[3] = true,
+			[-1] = true,
+		},
+	},
+	["me"] = {
+		["Permissions"] = {
+			[0] = true,
+			[1] = true,
+			[2] = true,
+			[3] = true,
+			[-1] = true,
+		},
+	},
+	["history"] = {
+		["Permissions"] = {
+			[0] = true,
+			[1] = true,
+			[2] = true,
+			[3] = true,
+			[-1] = true,
+		},
+	},
+	["chjoinmsg"] = {
+		["Permissions"] = {
+			[0] = true,
+			[1] = true,
+			[2] = true,
+			[3] = true,
+			[-1] = false,
+		},
+	},
+	["joinmsg"] = {
+		["Permissions"] = {
+			[0] = true,
+			[1] = true,
+			[2] = true,
+			[3] = true,
+			[-1] = false,
+		},
+	},
+	["joinstatus"] = {
+		["Permissions"] = {
+			[0] = true,
+			[1] = true,
+			[2] = true,
+			[3] = true,
+			[-1] = true,
+		},
+	},
+	["rules"] = {
+		["Permissions"] = {
+			[0] = true,
+			[1] = true,
+			[2] = true,
+			[3] = true,
+			[-1] = true,
+		},
+	},
+	["time"] = {
+		["Permissions"] = {
+			[0] = true,
+			[1] = true,
+			[2] = true,
+			[3] = true,
+			[-1] = true,
+		},
+	},
+	["showreg"] = {
+		["Permissions"] = {
+			[0] = true,
+			[1] = true,
+			[2] = true,
+			[3] = true,
+			[-1] = true,
+		},
+	},
+	["kick"] = {
+		["Permissions"] = {
+			[0] = true,
+			[1] = true,
+			[2] = false,
+			[3] = false,
+			[-1] = true,
+		},
+	},
+	["go"] = {
+		["Permissions"] = {
+			[0] = true,
+			[1] = true,
+			[2] = false,
+			[3] = false,
+			[-1] = false,
+		},
+	},
+	["ssgo"] = {
+		["Permissions"] = {
+			[0] = true,
+			[1] = false,
+			[2] = false,
+			[3] = false,
+			[-1] = false,
+		},
+	},
+	["say"] = {
+		["Permissions"] = {
+			[0] = true,
+			[1] = true,
+			[2] = false,
+			[3] = false,
+			[-1] = false,
+		},
+	},
+	["saypm"] = {
+		["Permissions"] = {
+			[0] = true,
+			[1] = true,
+			[2] = false,
+			[3] = false,
+			[-1] = false,
+		},
+	},
+	["banreason"] = {
+		["Permissions"] = {
+			[0] = true,
+			[1] = true,
+			[2] = true,
+			[3] = true,
+			[-1] = true,
+		},
+	},
+	["chuserprof"] = {
+		["Permissions"] = {
+			[0] = true,
+			[1] = true,
+			[2] = false,
+			[3] = false,
+			[-1] = false,
+		},
+	},
+	["addreguser"] = {
+		["Permissions"] = {
+			[0] = true,
+			[1] = true,
+			[2] = false,
+			[3] = false,
+			[-1] = false,
+		},
+	},
+	["delreguser"] = {
+		["Permissions"] = {
+			[0] = true,
+			[1] = true,
+			[2] = false,
+			[3] = false,
+			[-1] = false,
+		},
+	},
+	["mmreg"] = {
+		["Permissions"] = {
+			[0] = true,
+			[1] = true,
+			[2] = false,
+			[3] = false,
+			[-1] = false,
+		},
+	},
+	["mimic"] = {
+		["Permissions"] = {
+			[0] = true,
+			[1] = false,
+			[2] = false,
+			[3] = false,
+			[-1] = false,
+		},
+	},
+	["confirmreg"] = {
+		["Permissions"] = {
+			[0] = true,
+			[1] = true,
+			[2] = true,
+			[3] = true,
+			[-1] = false,
+		},
+	},
+	["getgags"] = {
+		["Permissions"] = {
+			[0] = true,
+			[1] = true,
+			[2] = true,
+			[3] = true,
+			[-1] = true,
+		},
+	},
+	["gag"] = {
+		["Permissions"] = {
+			[1] = {
+				[0] = false,
+				[1] = false,
+				[2] = true,
+				[3] = true,
+				[-1] = true,
+			},
+			[2] = {
+				[0] = false,
+				[1] = false,
+				[2] = false,
+				[3] = false,
+				[-1] = false,
+			},
+			[0] = {
+				[0] = false,
+				[1] = false,
+				[2] = true,
+				[3] = true,
+				[-1] = true,
+			},
+			[3] = {
+				[0] = false,
+				[1] = false,
+				[2] = false,
+				[3] = false,
+				[-1] = false,
+			},
+		},
+	},
+	["ungag"] = {
+		["Permissions"] = {
+			[0] = {
+				[0] = false,
+				[1] = false,
+				[2] = true,
+				[3] = true,
+				[-1] = true,
+			},
+			[1] = {
+				[0] = false,
+				[1] = false,
+				[2] = true,
+				[3] = true,
+				[-1] = true,
+			},
+			[2] = {
+				[0] = false,
+				[1] = false,
+				[2] = false,
+				[3] = false,
+				[-1] = false,
+			},
+			[3] = {
+				[0] = false,
+				[1] = false,
+				[2] = false,
+				[3] = false,
+				[-1] = false,
+			},
+		},
+	},
+	["tempgag"] = {
+		["Permissions"] = {
+			[0] = {
+				[0] = false,
+				[1] = false,
+				[2] = true,
+				[3] = true,
+				[-1] = true,
+			},
+			[1] = {
+				[0] = false,
+				[1] = false,
+				[2] = true,
+				[3] = true,
+				[-1] = true,
+			},
+			[2] = {
+				[0] = false,
+				[1] = false,
+				[2] = false,
+				[3] = false,
+				[-1] = false,
+			},
+			[3] = {
+				[0] = false,
+				[1] = false,
+				[2] = false,
+				[3] = false,
+				[-1] = false,
+			},
+		},
+	},
+
+}

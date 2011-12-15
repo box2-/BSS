@@ -22,9 +22,7 @@ end
 
 tUsers = {};
 
-tSettings = {
-    [1] = "^[" .. ( SetMan.GetString( 29 ):gsub( ( "%p" ), function ( p ) return "%" .. p end ) ) .. "]",
-}
+sPrefix = "^[" .. ( SetMan.GetString( 29 ):gsub( ( "%p" ), function ( p ) return "%" .. p end ) ) .. "]";
 
 function ChatArrival( tUser, sData )
     local sNick = tUser.sNick;
@@ -33,7 +31,7 @@ function ChatArrival( tUser, sData )
         tUsers[ sNick ] = tUser.sIP;
     end
     local nInitIndex = #sNick + 4;
-    if sData:match( tSettings[1], nInitIndex ) then
+    if sData:match( sPrefix, nInitIndex ) then
         local cmd = sData:match( "^(%w+)", nInitIndex + 1 );
         if cmd then
             cmd = cmd:lower( );

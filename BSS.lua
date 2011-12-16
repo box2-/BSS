@@ -1,26 +1,47 @@
 --[[
 
-Basic script for custom welcome messages w/ toggle, welcome messages per profile, and basic commands.
-Each command's permissions is set it's own table within the tCommandArrivals table.
-
 Scriptname: BSS Edition
 Creator: amenay
 Date: 2007.13.08
 
+Basic script for custom welcome messages, basic commands, clock (timers), and connection/transaction events.
+Each command needs profile permissions set in scripts/data/tbl/BSSPermissions.tbl
+User preferences are saved to scripts/data/tbl/BSS.tbl
+
 Updated by box2 for fun and profit
-Date: since 2007
 
 ]]
 
+--[[ Includes ]]
 pxcom = require "scripts/libs/pxcom";
+
+--[[ Global Variables ]]
 BSS = { };
 ChatHistory = { };
 tUnconfirmed = { };
 tDoubleReq = { };
 HistoryLines = 150
 
-do
+tWlcMsg = {
+	[0] = "Welcome home nick!|", --Master
+	[1] = "Welcome home nick!|", --Operator
+	[2] = "Hello nick!|", --VIP
+	[3] = nil, --reg
+	[-1] = nil, --unreg
+};
 
+tTimeTranslate = {
+	s = { 1000, 			" second(s)",	1, 1e+015 },
+	m = { 60000, 			" minute(s)", 	2, 16666666666667 },
+	h = { 60 * 60000, 		" hour(s)", 	3, 277777777777.78 },
+	d = { 1440 * 60000,		" day(s)", 		4, 11574074074.074 },
+	w = { 10080 * 60000,	" week(s)", 	5, 1653439153.4392 },
+	M = { 43200 * 60000,	" month(s)", 	6, 385802469.1358 },
+	y = { 512640 * 60000,	" year(s)", 	7, 32511444.028298 }
+};
+
+--[[ Misc ]]
+do
 	sPre = "^[" .. SetMan.GetString( 29 ) .. "]"
 	local sPath = "scripts/data/tbl/"
 	sLocation = sPath .. "BSS.tbl";
@@ -47,45 +68,55 @@ do
 		BSS.ShowHistory = { };
 	end
 	
-	RegOnly = { DownloadKey = { }, TimeOut = { }; };
-	
+	RegOnly = { DownloadKey = { }, TimeOut = { }; };	
 end
 
-tWlcMsg = {
-
-	[0] = "Welcome home nick!|", --Master
-	[1] = "Welcome home nick!|", --Operator
-	[2] = "Hello nick!|", --VIP
-	[3] = nil, --reg
-
-
-};
-
-tTimeTranslate = {
-	s = { 1000, 			" second(s)",	1, 1e+015 },
-	m = { 60000, 			" minute(s)", 	2, 16666666666667 },
-	h = { 60 * 60000, 		" hour(s)", 	3, 277777777777.78 },
-	d = { 1440 * 60000,		" day(s)", 		4, 11574074074.074 },
-	w = { 10080 * 60000,	" week(s)", 	5, 1653439153.4392 },
-	M = { 43200 * 60000,	" month(s)", 	6, 385802469.1358 },
-	y = { 512640 * 60000,	" year(s)", 	7, 32511444.028298 }
-};
-
----
 OnStartup = function( )
 	UpdateTimedTable( BSS.GagBot.tTimedGag );
-	
-	setmetatable( tCommandArrivals, { __index = tCommandArrivals.tShortCommands } )
+	setmetatable( tCommandArrivals, { __index = tCommandArrivals.tShortCommands } ) -- What does this do?
 end
 
+-- Why two OnErrors in this way?
 function OnError( sErrMsg )
 	Announce( sErrMsg )
+end
+OnError = function( msg )
+	Core.SendToProfile( 0, msg )
 end
 
 function OnExit( )
 	pxcom.SaveToFile( sLocation, BSS, "BSS" );
 end
 
+Announce = function( sMsg )
+	if SetMan.GetBool( 29 ) then
+		if SetMan.GetBool( 30 ) then
+			Core.SendPmToOps( sHBName, sMsg )
+		else
+			Core.SendToOps( sFromHB .. sMsg )
+		end
+	end
+end
+
+CanReg = function( iProfile )
+	local Profiles, AvailProfs = ProfMan.GetProfiles( ), ""; 
+	for i = 1, #Profiles, 1 do
+		if Profiles[ i ].iProfileNumber >= iProfile then
+			AvailProfs = AvailProfs .. Profiles[ i ].sProfileName .. ", ";
+		end
+	end
+	return AvailProfs;
+end
+
+function doHistory( )
+	local ret = "The last " .. #ChatHistory .. " lines of chat\r\n\r\n";
+	for i = #ChatHistory, 1, -1 do
+		ret = ret .. "[" .. os.date( "%x %X", ChatHistory[ i ][1] ) .. "] " .. ChatHistory[ i ][2] .. "\r\n";
+	end
+	return ret;
+end
+
+--[[ Timed Events ]]
 function OnTimer( nTimerId )
 	for i, v in pairs( BSS.GagBot.tTimedGag ) do
 		if v[1] == nTimerId then
@@ -96,19 +127,30 @@ function OnTimer( nTimerId )
 	end
 end
 
+UpdateTimedTable = function( TimedTable )
+	for i, v in pairs( TimedTable ) do
+		TimedTable[ i ][1], TimedTable[ i ][2], TimedTable[ i ][3] = TmrMan.AddTimer( TimedTable[ i ][2] ), TimedTable[ i ][2] - ( os.difftime( os.time( ), TimedTable[ i ][ 3 ] ) * 1000 ), os.time( );
+	end
+end
+
+TimeUnits = function( inms )
+	local ints = {}
+	for i, v in pairs( tTimeTranslate ) do table.insert( ints, v[3], v ) end
+	for i = #ints, 1, -1 do
+		if inms >= ints[i][1] then
+			return string.format( "%.5f", inms / ints[i][1] ) .. ints[i][2]
+		end
+	end
+	return string.format( "%.5f", inms ) .. " milisecond(s)"
+end
+
+--[[ User Connecting / Disconnecting ]]
+-- What is a Key?
 RemKey = function( nTimerId )
 	if RegOnly.DownloadKey[ RegOnly.TimeOut[ nTimerId ] ] or RegOnly.TimeOut[ nTimerId ] then
 		RegOnly.DownloadKey[ RegOnly.TimeOut[ nTimerId ] ], RegOnly.TimeOut[ nTimerId ] = nil, nil;
 	end
 	TmrMan.RemoveTimer( nTimerId );
-end
-
---[[ fucking clown romanian hacker ]]
-function UserConnected( user )
-	if string.find( string.lower(user.sNick) , "monica") ~= nil then
-		Core.Disconnect( user.sNick );
-		Core.SendPmToOps( sOCName, user.sNick .. " was auto-dropped because Nox hates everyone.|" );
-	end
 end
 
 function RegConnected( user )
@@ -143,27 +185,13 @@ function OpDisconnected( user )
 	if not BSS.WlcBot.tNoWlc[ user.sNick ] then
 		Core.SendToAll( sFromHB .. "See you next time, " .. user.sNick .. "!|" );
 	end
---	RegDisconnected( user )
 end
 
---[[
-function RegDisconnected( user )
-	if tUnconfirmed[ user.sNick:lower() ] then
-		Announce( "*** " .. user.sNick .. " didn't confirm their pass before disconnecting, removing account. . ." );
-		tUnconfirmed[ user.sNick:lower() ] = nil;
-		RegMan.DelReg( user.sNick );
-	end
-end
-]]
-
+--[[ Search/Transfer Requests ]]
 function SearchArrival( user, data )
 	if user.iProfile == -1 then
 		return Core.SendToUser( user,  sBlockedMsg ), true;
 	end
-end
-
-OnError = function( msg )
-	Core.SendToProfile( 0, msg )
 end
 
 function ConnectToMeArrival( user, data )
@@ -184,6 +212,35 @@ function RevConnectToMeArrival( user, data )
 		return Core.SendToUser( user,  sBlockedMsg ), true;
 	end
 end
+
+--[[ Chat ]]
+-- What is To?
+ToArrival = function( user, data )
+	local sToUser = data:match( "^(%S+)", 6 );
+	local nInitIndex = #sToUser + 18 + #user.sNick * 2;
+	if data:match( sPre, nInitIndex ) then
+		local cmd = data:match( "^(%w+)", nInitIndex + 1 )
+		if cmd then
+			cmd = cmd:lower( )
+			if tCommandArrivals[ cmd ] then
+				if tCommandArrivals[ cmd ].Permissions[ user.iProfile ] then
+					local msg;
+					if ( nInitIndex + #cmd + 2 ) <= #data - 1 then msg = data:sub( nInitIndex + #cmd + 2 ) end
+					return ExecuteCommand( user, msg, cmd, "PM" );
+				else
+					return Core.SendPmToUser( user, sHBName,  "*** Permission denied.|" ), true;
+				end
+			end
+		end
+	end
+	if user.iProfile == -1 then
+		if data:match( "http%:%/%/", nInitIndex ) or ( data:match( "www%.", nInitIndex ) or data:match( "dchub://", nInitIndex ) ) then
+			Core.SendPmToUser( user, sHBName, "All messages from unregistered users which contain URLs are blocked then forwarded to our operators." );
+			Announce( user.sNick .. ", an unregistered user, sent a PM to " .. sToUser .. " which contained the URL: " .. data:sub( nInitIndex ) );
+			return true;
+		end
+	end
+end;
 
 function ChatArrival( user, data )
 	if BSS.GagBot.tGagged[ user.sNick ] or BSS.GagBot.tTimedGag[ user.sNick ] then
@@ -222,33 +279,7 @@ function ChatArrival( user, data )
 	end
 end
 
-ToArrival = function( user, data )
-	local sToUser = data:match( "^(%S+)", 6 );
-	local nInitIndex = #sToUser + 18 + #user.sNick * 2;
-	if data:match( sPre, nInitIndex ) then
-		local cmd = data:match( "^(%w+)", nInitIndex + 1 )
-		if cmd then
-			cmd = cmd:lower( )
-			if tCommandArrivals[ cmd ] then
-				if tCommandArrivals[ cmd ].Permissions[ user.iProfile ] then
-					local msg;
-					if ( nInitIndex + #cmd + 2 ) <= #data - 1 then msg = data:sub( nInitIndex + #cmd + 2 ) end
-					return ExecuteCommand( user, msg, cmd, "PM" );
-				else
-					return Core.SendPmToUser( user, sHBName,  "*** Permission denied.|" ), true;
-				end
-			end
-		end
-	end
-	if user.iProfile == -1 then
-		if data:match( "http%:%/%/", nInitIndex ) or ( data:match( "www%.", nInitIndex ) or data:match( "dchub://", nInitIndex ) ) then
-			Core.SendPmToUser( user, sHBName, "All messages from unregistered users which contain URLs are blocked then forwarded to our operators." );
-			Announce( user.sNick .. ", an unregistered user, sent a PM to " .. sToUser .. " which contained the URL: " .. data:sub( nInitIndex ) );
-			return true;
-		end
-	end
-end;
---------
+--[[ OP/User Commands ]]
 ExecuteCommand = function( user, msg, cmd, where )
 	local bRet, sMsg, sWhere, sFrom = tCommandArrivals[ cmd ]:Action( user, msg );
 	if sWhere then
@@ -272,60 +303,27 @@ ExecuteCommand = function( user, msg, cmd, where )
 		return bRet;
 	end
 end
---------
-UpdateTimedTable = function( TimedTable )
-	for i, v in pairs( TimedTable ) do
-		TimedTable[ i ][1], TimedTable[ i ][2], TimedTable[ i ][3] = TmrMan.AddTimer( TimedTable[ i ][2] ), TimedTable[ i ][2] - ( os.difftime( os.time( ), TimedTable[ i ][ 3 ] ) * 1000 ), os.time( );
-	end
-end
 
-TimeUnits = function( inms )
-	local ints = {}
-	for i, v in pairs( tTimeTranslate ) do table.insert( ints, v[3], v ) end
-	for i = #ints, 1, -1 do
-		if inms >= ints[i][1] then
-			return string.format( "%.5f", inms / ints[i][1] ) .. ints[i][2]
-		end
-	end
-	return string.format( "%.5f", inms ) .. " milisecond(s)"
-end	
---------
-Announce = function( sMsg )
-	if SetMan.GetBool( 29 ) then
-		if SetMan.GetBool( 30 ) then
-			Core.SendPmToOps( sHBName, sMsg )
-		else
-			Core.SendToOps( sFromHB .. sMsg )
-		end
-	end
-end
--------
-CanReg = function( iProfile )
-	local Profiles, AvailProfs = ProfMan.GetProfiles( ), ""; 
-	for i = 1, #Profiles, 1 do
-		if Profiles[ i ].iProfileNumber >= iProfile then
-			AvailProfs = AvailProfs .. Profiles[ i ].sProfileName .. ", ";
-		end
-	end
-	return AvailProfs;
-end
--------
-function doHistory( )
-	local ret = "The last " .. #ChatHistory .. " lines of chat\r\n\r\n";
-	for i = #ChatHistory, 1, -1 do
-		ret = ret .. "[" .. os.date( "%x %X", ChatHistory[ i ][1] ) .. "] " .. ChatHistory[ i ][2] .. "\r\n";
-	end
-	return ret;
-end
---------
+-- Command Shortcuts
 tCommandArrivals.tShortCommands = { 
 	js = tCommandArrivals.joinstatus,
 	chjm = tCommandArrivals.chjoinmsg,
 	br = tCommandArrivals.banreason;
 };
---
 
---Welcome Bot commands
+-- Script Memory Usage
+function tCommandArrivals.scriptstat:Action( )
+	local tScr = ScriptMan.GetScripts();
+	local sO = "";
+	for i, v in ipairs( tScr ) do
+		if v.bEnabled then
+			sO = sO .. "\t[" .. i .. "] " .. v.sName .. " is using " .. v.iMemUsage .. " kB.\r\n";
+		end
+	end
+	return true, "Script stats:\r\n\r\n" .. sO;
+end
+
+--Welcome Message Commands
 function tCommandArrivals.joinmsg:Action ( user, sMsg )
 	if sMsg and Core.GetUserValue( user, 11 ) then
 		local sMsg = sMsg:sub( 1, -2 )
@@ -362,6 +360,7 @@ function tCommandArrivals.chjoinmsg:Action ( user, sMsg )
 	end
 end
 
+-- I don't know what this does
 function tCommandArrivals.joinstatus:Action ( )
 	local disp = "";
 	for i, v in pairs( BSS.WlcBot.tNoWlc ) do
@@ -383,7 +382,6 @@ function tCommandArrivals.joinstatus:Action ( )
 	return true, "\r\n\r\n\t\t\t\t\t*-**-*-Join status-*-**-*\r\n\r\n" .. disp, "PM", sHBName;
 end
 
---Misc Basic
 function tCommandArrivals.history:Action( user, sMsg )
 	if sMsg and sMsg:sub( 1, -2 ) == "onjoin" then
 		if BSS.ShowHistory[ user.sNick ] then
@@ -463,24 +461,9 @@ function tCommandArrivals.kick:Action ( user, sMsg )
 	else
 --		if i am here it is because i hate amenay
 	end
---[[
-	if sMsg then
-		sMsg = sMsg:sub( 1, -2 )
-		local vic = Core.GetUser( sMsg )
-		if vic then
-			Core.Disconnect( vic );
-			Core.SendPmToOps( sOCName, user.sNick .. " kicked " .. sMsg:sub( 1, -1 ) .. " from the hub.|" );
-			return true;
-		else
-			return true, "*** User is offline.|";
-		end
-	else
-		return true, "*** Command use: !go <nick>|";
-	end
-]]--
 end
 
--- Disconnect users quickly
+-- Disconnect users quickly (!kick was only added because that's a command people expect)
 function tCommandArrivals.go:Action ( user, sMsg )
 	if sMsg then
 		local vic = Core.GetUser( sMsg:sub( 1, -2 )  )
@@ -511,20 +494,15 @@ function tCommandArrivals.ssgo:Action ( user, sMsg )
 	end
 end
 
--- No idea
-function tCommandArrivals.mmreg:Action ( user, sMsg )
-	if sMsg then
-		sMsg = sMsg:sub( 1, -2 )
-		for i = 0, ProfMan.GetProfile( #ProfMan.GetProfiles( ) - 1 ).iProfileNumber do
-			Core.SendPmToProfile( i, SetMan.GetString( 21 ), sMsg .. " //" .. user.sNick );
-		end
-		return true;
-	else
-		return true, "*** No message parameter provided.|";
+-- User Action (emote?)
+function tCommandArrivals.me:Action( user, sMsg )
+	table.insert( ChatHistory, 1, { os.time( ), "* " .. user.sNick .. " " .. ( sMsg:sub( 1, -2 ) ) } );
+	if #ChatHistory == HistoryLines + 1 then
+		table.remove( ChatHistory, HistoryLines + 1 );
 	end
 end
 
--- Imporsonate other users in hub chat
+-- Imporsonate other users in hub chat (Masters only)
 function tCommandArrivals.say:Action ( user, sMsg )
 	if sMsg then
 		local nick, msg = sMsg:match( "(%S+)%s+(.*)" );
@@ -549,7 +527,7 @@ function tCommandArrivals.mimic:Action ( user, sMsg )
 	end
 end
 
--- Imporsonate other users sending private messages
+-- Imporsonate other users sending private messages (!!)
 function tCommandArrivals.saypm:Action ( user, sMsg )
 	if sMsg then
 		to, from, msg = sMsg:match( "(%S+)%s+(%S+)%s+(.*)" );
@@ -606,7 +584,7 @@ function tCommandArrivals.banreason:Action ( user, sMsg )
 	end
 end
 
---Gag Commands
+--[[ Gag Commands ]]
 function tCommandArrivals.gag:Action ( user, sMsg )
 	if sMsg then
 		local victim = sMsg:sub( 1, -2 );
@@ -698,7 +676,30 @@ function tCommandArrivals.tempgag:Action ( user, sMsg )
 	end
 end;
 
---RegBot Commands
+--[[ Registration Commands ]]
+-- Show all register users (TODO: Rename to !getregs for naming consitency)
+function tCommandArrivals.showreg:Action( )
+	local tProfs, tResults, ret = { 0, 1, 2, 3 }, { }, "";
+	for i = 1, #tProfs do
+		local sProfName, tProfUsers = ProfMan.GetProfile( tProfs[ i ] ).sProfileName, RegMan.GetRegsByProfile( tProfs[ i ] );
+		tResults[ sProfName ] = { };
+		for ind = 1, #tProfUsers do
+			table.insert( tResults[ sProfName ], tProfUsers[ ind ].sNick );
+			table.sort( tResults[ sProfName ] )
+		end
+		ret = ret .. "\t\t\tThere are currently " .. #tResults[ sProfName ] .. " " ..  sProfName .. "s (Profile #" .. tProfs[ i ] .. ") registered:\r\n\r\n\t\t\t" ..  table.concat( tResults[ sProfName ], "\r\n\t\t\t", 1, #tResults[ sProfName ] ) .. "\r\n\r\n"
+	end
+	return true, "\r\n\r\n\t" .. SetMan.GetString( 0 ) .. "'s Reglist:\r\n\r\n" .. ret;
+end
+
+-- Change your own password
+function tCommandArrivals.passwd:Action( user )
+	if tUnconfirmed[ user.sNick:lower() ] then
+		return true, "*** You cannot use this command until you've confirmed the password sent to you by " .. sHBName .. ". Use the " .. SetMan.GetString( 29 ):sub( 1, 1 ) .. "confirmreg <password> command.";
+	end
+end
+
+-- Request Registration
 function tCommandArrivals.regme:Action ( user )
 	if tDoubleReq[ user.uptr ] then
 --		Core.Disconnect( user );
@@ -716,38 +717,9 @@ function tCommandArrivals.regme:Action ( user )
 		"Using generatepass will create a random password for them.  Make them vip if they share lots good stuff or are a hub friend.|");
 
 --		Announce( user.sNick .. " has hit the !regme button.  Would an operator please kindly help them?|");
-
 		return true, sRegMsg;
 	end
 end
-
-
-function tCommandArrivals.passwd:Action( user )
-	if tUnconfirmed[ user.sNick:lower() ] then
-		return true, "*** You cannot use this command until you've confirmed the password sent to you by " .. sHBName .. ". Use the " .. SetMan.GetString( 29 ):sub( 1, 1 ) .. "confirmreg <password> command.";
-	end
-end
-
---[[
-function tCommandArrivals.confirmreg:Action( user, sMsg )
-	if sMsg then
-		if tUnconfirmed[ user.sNick:lower() ] then
-			local tRegUser = RegMan.GetReg( user.sNick );
-			if tRegUser and sMsg:sub( 1, -2 ) == tRegUser.sPassword then
-				Announce( user.sNick .. " has confirmed his or her password.|" );
-				tUnconfirmed[ user.sNick:lower() ] = nil;
-				return true, "*** You've confirmed your password, you can now use !passwd <newpassword> if you want to change it.|";
-			else
-				return true, "*** The password you typed did not match the one given to you by " .. sHBName .. ". Try again.|";
-			end
-		else
-			return true, "*** You're currently unregistered.  Please try " .. SetMan.GetString( 29 ):sub( 1, 1 ) .. "regme again or talk to an op for help.|";
-		end
-	else
-		return true, "*** Syntax error, try typing " .. SetMan.GetString( 29 ):sub( 1, 1 ) .. "confirmreg <password> (password is the one you received from " .. sHBName .. " without the < >).|";
-	end
-end
-]]
 
 function tCommandArrivals.addreguser:Action( user, sMsg )
 	if sMsg then
@@ -857,34 +829,15 @@ function tCommandArrivals.chuserprof:Action( user, sMsg )
 	end
 end
 
-function tCommandArrivals.showreg:Action( )
-	local tProfs, tResults, ret = { 0, 1, 2, 3 }, { }, "";
-	for i = 1, #tProfs do
-		local sProfName, tProfUsers = ProfMan.GetProfile( tProfs[ i ] ).sProfileName, RegMan.GetRegsByProfile( tProfs[ i ] );
-		tResults[ sProfName ] = { };
-		for ind = 1, #tProfUsers do
-			table.insert( tResults[ sProfName ], tProfUsers[ ind ].sNick );
-			table.sort( tResults[ sProfName ] )
+-- No idea (reg related?)
+function tCommandArrivals.mmreg:Action ( user, sMsg )
+	if sMsg then
+		sMsg = sMsg:sub( 1, -2 )
+		for i = 0, ProfMan.GetProfile( #ProfMan.GetProfiles( ) - 1 ).iProfileNumber do
+			Core.SendPmToProfile( i, SetMan.GetString( 21 ), sMsg .. " //" .. user.sNick );
 		end
-		ret = ret .. "\t\t\tThere are currently " .. #tResults[ sProfName ] .. " " ..  sProfName .. "s (Profile #" .. tProfs[ i ] .. ") registered:\r\n\r\n\t\t\t" ..  table.concat( tResults[ sProfName ], "\r\n\t\t\t", 1, #tResults[ sProfName ] ) .. "\r\n\r\n"
+		return true;
+	else
+		return true, "*** No message parameter provided.|";
 	end
-	return true, "\r\n\r\n\t" .. SetMan.GetString( 0 ) .. "'s Reglist:\r\n\r\n" .. ret;
-end
-
-function tCommandArrivals.me:Action( user, sMsg )
-	table.insert( ChatHistory, 1, { os.time( ), "* " .. user.sNick .. " " .. ( sMsg:sub( 1, -2 ) ) } );
-	if #ChatHistory == HistoryLines + 1 then
-		table.remove( ChatHistory, HistoryLines + 1 );
-	end
-end
-
-function tCommandArrivals.scriptstat:Action( )
-	local tScr = ScriptMan.GetScripts();
-	local sO = "";
-	for i, v in ipairs( tScr ) do
-		if v.bEnabled then
-			sO = sO .. "\t[" .. i .. "] " .. v.sName .. " is using " .. v.iMemUsage .. " kB.\r\n";
-		end
-	end
-	return true, "Script stats:\r\n\r\n" .. sO;
 end

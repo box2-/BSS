@@ -17,10 +17,10 @@ pxcom = require "scripts/libs/pxcom";
 
 --[[ Global Variables ]]
 BSS = { };
-ChatHistory = { };
+--ChatHistory = { };
+--HistoryLines = 150
 tUnconfirmed = { };
 tDoubleReq = { };
-HistoryLines = 150
 
 tWlcMsg = {
 	[0] = "Welcome home nick!|", --Master
@@ -65,7 +65,7 @@ do
 		BSS.GagBot.tTimedGag = { };
 		BSS.WlcBot = { tWlc = { }; };
 		BSS.WlcBot.tNoWlc = { };
-		BSS.ShowHistory = { };
+		--BSS.ShowHistory = { };
 	end
 	
 	RegOnly = { DownloadKey = { }, TimeOut = { }; };	
@@ -80,9 +80,11 @@ end
 function OnError( sErrMsg )
 	Announce( sErrMsg )
 end
+--[[
 OnError = function( msg )
 	Core.SendToProfile( 0, msg )
 end
+]]
 
 function OnExit( )
 	pxcom.SaveToFile( sLocation, BSS, "BSS" );
@@ -108,6 +110,7 @@ CanReg = function( iProfile )
 	return AvailProfs;
 end
 
+--[[
 function doHistory( )
 	local ret = "The last " .. #ChatHistory .. " lines of chat\r\n\r\n";
 	for i = #ChatHistory, 1, -1 do
@@ -115,6 +118,7 @@ function doHistory( )
 	end
 	return ret;
 end
+]]
 
 --[[ Timed Events ]]
 function OnTimer( nTimerId )
@@ -154,8 +158,8 @@ RemKey = function( nTimerId )
 end
 
 function RegConnected( user )
-	Core.SendToUser( user, "Type !history to see the last " .. #ChatHistory .. " lines of chat. (Type \"!history onjoin\" to receive automatically.)|" );
-	if BSS.ShowHistory[ user.sNick ] then Core.SendToUser( user, sFromHB .. doHistory( ) ) end;
+--	Core.SendToUser( user, "Type !history to see the last " .. #ChatHistory .. " lines of chat. (Type \"!history onjoin\" to receive automatically.)|" );
+--	if BSS.ShowHistory[ user.sNick ] then Core.SendToUser( user, sFromHB .. doHistory( ) ) end;
 	if not BSS.WlcBot.tNoWlc[ user.sNick ] then
 		local nick = user.sNick;
 		if BSS.WlcBot.tWlc[ nick ] then
@@ -168,8 +172,8 @@ function RegConnected( user )
 end
 
 function OpConnected( user )
-	Core.SendToUser( user, "Type !history to see the last " .. #ChatHistory .. " lines of chat. (Type \"!history onjoin\" to receive automatically.)|" );
-	if BSS.ShowHistory[ user.sNick ] then Core.SendToUser( user, sFromHB .. doHistory( ) ) end;
+--	Core.SendToUser( user, "Type !history to see the last " .. #ChatHistory .. " lines of chat. (Type \"!history onjoin\" to receive automatically.)|" );
+--	if BSS.ShowHistory[ user.sNick ] then Core.SendToUser( user, sFromHB .. doHistory( ) ) end;
 	if not BSS.WlcBot.tNoWlc[ user.sNick ] then
 		local nick = user.sNick;
 		if BSS.WlcBot.tWlc[ nick ] then
@@ -271,12 +275,14 @@ function ChatArrival( user, data )
 	end
 	if data:match( "^is kicking %S+ because:", nInitIndex ) or data:match( "^is kicking %S+ because:", nInitIndex + #user.sNick + 1 ) then 
 		return false; --look at me later.
+--[[
 	else	
 		table.insert( ChatHistory, 1, { os.time( ), data:sub( 1, -2 ) } )
 		if #ChatHistory == HistoryLines + 1 then
 			table.remove( ChatHistory, HistoryLines + 1 )
 		end
 	end
+]]
 end
 
 --[[ OP/User Commands ]]
@@ -382,6 +388,7 @@ function tCommandArrivals.joinstatus:Action ( )
 	return true, "\r\n\r\n\t\t\t\t\t*-**-*-Join status-*-**-*\r\n\r\n" .. disp, "PM", sHBName;
 end
 
+--[[
 function tCommandArrivals.history:Action( user, sMsg )
 	if sMsg and sMsg:sub( 1, -2 ) == "onjoin" then
 		if BSS.ShowHistory[ user.sNick ] then
@@ -394,6 +401,7 @@ function tCommandArrivals.history:Action( user, sMsg )
 	end
 	return true, doHistory( );
 end
+]]
 
 function tCommandArrivals.rules:Action ( )
 	Core.SendToAll( sFromHB .. "\r\n\n*** Rules for this hub are simple ***\r\n" ..
@@ -494,6 +502,7 @@ function tCommandArrivals.ssgo:Action ( user, sMsg )
 	end
 end
 
+--[[
 -- User Action (emote?)
 function tCommandArrivals.me:Action( user, sMsg )
 	table.insert( ChatHistory, 1, { os.time( ), "* " .. user.sNick .. " " .. ( sMsg:sub( 1, -2 ) ) } );
@@ -501,6 +510,7 @@ function tCommandArrivals.me:Action( user, sMsg )
 		table.remove( ChatHistory, HistoryLines + 1 );
 	end
 end
+]]
 
 -- Imporsonate other users in hub chat (Masters only)
 function tCommandArrivals.say:Action ( user, sMsg )

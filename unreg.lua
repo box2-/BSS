@@ -1,6 +1,5 @@
---[[
-unreg.lua
-by box2 - 2011-12-10
+--[[ unreg.lua
+by box2 - 2011-12
 
 Do not allow unregistered users to participate in the hub
 Turn this on in times of proxy abusing romanains
@@ -16,7 +15,6 @@ BLOCKCOUNT=3
 
 iptables -A INPUT -p tcp --dport 411 -i eth0 -m state --state NEW -m recent --set --name 411
 iptables -A INPUT -p tcp --dport 411 -i eth0 -m state --state NEW -m recent --update --seconds ${SECONDS} --hitcount ${BLOCKCOUNT} --name 411 -j DROP
-
 ]]
 
 sOCName = SetMan.GetString( 24 ) or "SetMe"; --Bots not enabled in GUI? Change the value after the or.

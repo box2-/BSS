@@ -1,5 +1,5 @@
 --[[ history.lua
-Ripped from lua (by amenay)
+Ripped from BSS.lua (by amenay)
 
 When joining the hub, `!history` to see the last 150 lines of public chat.
 `!history onjoin` to automatically do this every time you connect to the hub.
